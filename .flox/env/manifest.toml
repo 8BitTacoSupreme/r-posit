@@ -1,0 +1,161 @@
+version = 1
+
+# =============================================================================
+# Flox Environment: Financial Research Shiny/Posit Stack
+# =============================================================================
+
+[install]
+R.pkg-path = "R"
+R.pkg-group = "r-runtime"
+
+python.pkg-path = "python311Full"
+python.pkg-group = "python-runtime"
+
+uv.pkg-path = "uv"
+uv.pkg-group = "python-runtime"
+
+quarto.pkg-path = "quarto"
+quarto.pkg-group = "docs"
+
+pandoc.pkg-path = "pandoc"
+pandoc.pkg-group = "docs"
+
+texlive.pkg-path = "texliveFull"
+texlive.pkg-group = "docs"
+
+curl.pkg-path = "curl"
+curl.pkg-group = "syslibs"
+
+openssl.pkg-path = "openssl"
+openssl.pkg-group = "syslibs"
+
+libxml2.pkg-path = "libxml2"
+libxml2.pkg-group = "syslibs"
+
+postgresql.pkg-path = "postgresql"
+postgresql.pkg-group = "syslibs"
+
+unixODBC.pkg-path = "unixODBC"
+unixODBC.pkg-group = "syslibs"
+
+harfbuzz.pkg-path = "harfbuzz"
+harfbuzz.pkg-group = "syslibs"
+
+fribidi.pkg-path = "fribidi"
+fribidi.pkg-group = "syslibs"
+
+pkg-config.pkg-path = "pkg-config"
+pkg-config.pkg-group = "syslibs"
+
+gettext.pkg-path = "gettext"
+gettext.pkg-group = "syslibs"
+
+gmp.pkg-path = "gmp"
+gmp.pkg-group = "syslibs"
+
+mpfr.pkg-path = "mpfr"
+mpfr.pkg-group = "syslibs"
+
+freetype.pkg-path = "freetype"
+freetype.pkg-group = "syslibs"
+
+libpng.pkg-path = "libpng"
+libpng.pkg-group = "syslibs"
+
+glib.pkg-path = "glib"
+glib.pkg-group = "syslibs"
+
+cairo.pkg-path = "cairo"
+cairo.pkg-group = "syslibs"
+
+fontconfig.pkg-path = "fontconfig"
+fontconfig.pkg-group = "syslibs"
+
+bintools.pkg-path = "bintools"
+bintools.pkg-group = "buildtools"
+
+libtool.pkg-path = "libtool"
+libtool.pkg-group = "buildtools"
+
+jq.pkg-path = "jq"
+jq.pkg-group = "devtools"
+
+[vars]
+R_LIBS_USER = "$FLOX_ENV_CACHE/r-libs"
+RENV_PATHS_LIBRARY = "$FLOX_ENV_CACHE/r-libs"
+RENV_PATHS_CACHE = "$FLOX_ENV_CACHE/renv-cache"
+RETICULATE_PYTHON = "$FLOX_ENV_CACHE/venv/bin/python"
+SHINY_PORT = "3838"
+SHINY_HOST = "0.0.0.0"
+
+[hook]
+on-activate = """
+  setup_r_pkg_config() {
+    local bindir="${FLOX_ENV_CACHE}/bin"
+    if [ ! -f "$bindir/pkg-config" ]; then
+      mkdir -p "$bindir"
+      local real_pkgconfig
+      real_pkgconfig="$(command -v pkg-config)"
+      printf '#!/bin/sh\\nexec "%s" $(echo "$@" | sed "s/--static//g")\\n' "$real_pkgconfig" > "$bindir/pkg-config"
+      chmod +x "$bindir/pkg-config"
+    fi
+  }
+
+  setup_glibtoolize() {
+    local bindir="${FLOX_ENV_CACHE}/bin"
+    if [ ! -f "$bindir/glibtoolize" ] && command -v libtoolize >/dev/null 2>&1; then
+      mkdir -p "$bindir"
+      ln -sf "$(command -v libtoolize)" "$bindir/glibtoolize"
+    fi
+    export PATH="${bindir}:${PATH}"
+  }
+
+  setup_r_libs() {
+    local lib_dir="${FLOX_ENV_CACHE}/r-libs"
+    if [ ! -d "$lib_dir" ]; then
+      mkdir -p "$lib_dir"
+    fi
+  }
+
+  restore_renv() {
+    local flag="${FLOX_ENV_CACHE}/.renv_restored"
+    if [ ! -f "$flag" ] && [ -f "${FLOX_ENV_PROJECT}/renv.lock" ]; then
+      echo "Restoring R packages from renv.lock..."
+      Rscript -e 'if (!requireNamespace("renv", quietly = TRUE)) install.packages("renv", repos = "https://cloud.r-project.org"); renv::restore(prompt = FALSE)'
+      touch "$flag"
+    fi
+  }
+
+  setup_python_venv() {
+    local venv="${FLOX_ENV_CACHE}/venv"
+    if [ ! -d "$venv" ]; then
+      uv venv "$venv" --python python3 --quiet
+    fi
+    if [ -f "$venv/bin/activate" ]; then
+      source "$venv/bin/activate"
+    fi
+  }
+
+  setup_r_pkg_config
+  setup_glibtoolize
+  setup_r_libs
+  restore_renv
+  setup_python_venv
+"""
+
+[profile]
+common = """
+  shiny_dev() {
+    Rscript -e "shiny::runApp('${FLOX_ENV_PROJECT}/app', port = ${SHINY_PORT:-3838}, host = '${SHINY_HOST:-0.0.0.0}')"
+  }
+  render_reports() {
+    quarto render "${FLOX_ENV_PROJECT}/reports/"
+  }
+"""
+
+[services.shiny]
+command = "Rscript -e \"shiny::runApp('$FLOX_ENV_PROJECT/app', port = $SHINY_PORT, host = '$SHINY_HOST')\""
+is-daemon = true
+
+[options]
+systems = ["x86_64-linux", "aarch64-linux", "x86_64-darwin", "aarch64-darwin"]

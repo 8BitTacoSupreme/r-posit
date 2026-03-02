@@ -1,0 +1,34 @@
+# R
+.Rhistory
+.Rdata
+.RData
+.Rproj.user
+*.Rproj
+
+# renv
+renv/library/
+renv/staging/
+renv/local/
+renv/cellar/
+renv/sandbox/
+renv/python/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# Flox cache (managed per-machine)
+.flox/cache/
+
+# Secrets
+.env
+.Renviron
