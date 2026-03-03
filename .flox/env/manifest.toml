@@ -83,7 +83,6 @@ jq.pkg-group = "devtools"
 [vars]
 R_LIBS_USER = "$FLOX_ENV_CACHE/r-libs"
 RENV_PATHS_LIBRARY = "$FLOX_ENV_CACHE/r-libs"
-RENV_PATHS_CACHE = "$FLOX_ENV_CACHE/renv-cache"
 RETICULATE_PYTHON = "$FLOX_ENV_CACHE/venv/bin/python"
 SHINY_PORT = "3838"
 SHINY_HOST = "0.0.0.0"
